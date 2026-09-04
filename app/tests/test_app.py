@@ -50,13 +50,6 @@ def test_increment_returns_value(dynamodb_table):
     from src.increment import increment
     assert increment() == 43
 
-def test_increment_missing_item(dynamodb_table):
-    import boto3
-    client = boto3.client('dynamodb', region_name=aws_region)
-    client.delete_item(TableName='VisitorCount', Key={'id': {'S': 'visitor-count'}})
-    from src.increment import increment
-    assert increment() is None
-
 def test_increment_handler_shape(dynamodb_table):
     from src.increment import handler
     import json

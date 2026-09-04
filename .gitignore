@@ -50,6 +50,9 @@ terraform.rc
 
 infrastructure/tls/certs
 
+#Avoid commiting the zipped files:
+infra/lambda/*.zip
+
 ##############################
 #       PYTHON STUFF         #
 ##############################
