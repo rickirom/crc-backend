@@ -1,0 +1,85 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Don't let two deploys race each other on the same ref
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  ##############################
+  #           LINT             #
+  ##############################
+  lint-python:
+    name: Lint (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Ruff check
+        run: uvx ruff check --output-format=github .
+
+      - name: Ruff format
+        run: uvx ruff format --check .
+
+  lint-terraform:
+    name: Lint (Terraform)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive -diff
+
+      - name: terraform validate
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+
+  ##############################
+  #           TEST             #
+  ##############################
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    needs: [lint-python]
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: app/uv.lock
+
+      # uv picks up app/.python-version (3.14) and installs it
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Run pytest
+        run: uv run pytest -v
+
+  ############################################
+  #     DEPLOY INFRA (managed by HCPTf)      #
+  ############################################
