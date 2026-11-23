@@ -1,5 +1,6 @@
 # tests/test_app.py
 import os
+
 import boto3
 import pytest
 from moto import mock_aws
@@ -39,8 +40,9 @@ def test_get_view_count_missing_item(dynamodb_table):
     assert get_view_count() is None
 
 def test_get_view_handler_shape(dynamodb_table):
-    from src.get_views import handler
     import json
+
+    from src.get_views import handler
     result = handler({}, None)
     assert result['statusCode'] == 200
     assert json.loads(result['body'])['views'] == 42
@@ -51,8 +53,9 @@ def test_increment_returns_value(dynamodb_table):
     assert increment() == 43
 
 def test_increment_handler_shape(dynamodb_table):
-    from src.increment import handler
     import json
+
+    from src.increment import handler
     result = handler({}, None)
     assert result['statusCode'] == 200
     assert json.loads(result['body'])['views'] == 43

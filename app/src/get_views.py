@@ -1,6 +1,7 @@
-import boto3
 import json
 import os
+
+import boto3
 
 table_name = os.environ.get('TABLE_NAME', 'VisitorCount')
 dynamodb = boto3.resource('dynamodb')
