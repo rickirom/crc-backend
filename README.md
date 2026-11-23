@@ -1,4 +1,14 @@
 # README
+
+This repo holds the code of the backend of my CRC. It's the dynamo DB and a couple of API endpoints in Python for viewing the count and updating. The updating uses the native operation "increment" that comes directly from Dynamo's own functions. That way you can keep the increment operation truly atomic.
+
+Infra is managed by HCP Terraform as it could have been in no other way.
+
+---
+
+Keeping the old version of this page below (updated):
+
+
 ## Cloud Resume Challenge
 
 The Cloud Resume Challenge is a "spec" developed by <a href="https://github.com/forrestbrazeal">Forrest Brazeal</a>. It's a series of steps that one can do to prove different skills such as basic web and API development, managing infrastructure, CI/CD, etc. 
@@ -10,13 +20,13 @@ These are the steps that I should take in order to complete the CRC:
 - [x] 4. Deploying the static website in an S3 bucket
 - [x] 5. Use CloudFront to use TLS certificates for secure connections.
 - [x] 6. Custom domain name with ~~Route53~~ Cloudflare
-- [ ] 7. Visitor counter with JS
-- [ ] 8. Counter value stored in DynamoDB
-- [ ] 9. API to update the DB value with a Lambda function
-- [ ] 10. API tests
-- [ ] 11. Infrastructure as Code
-- [ ] 12. CI/CD
-- [ ] 13. Automatically updating the bucket
+- [x] 7. Visitor counter with JS
+- [x] 8. Counter value stored in DynamoDB
+- [x] 9. API to update the DB value with a Lambda function
+- [x] 10. API tests
+- [x] 11. Infrastructure as Code
+- [x] 12. CI/CD
+- [x] 13. Automatically updating the bucket
 - [ ] 14. Blog post
 
 In this case, as you can see, I have chosen the AWS version of the cloud services. Any other cloud provider services would work as well. If you want to learn more about Forrest and the Cloud Resume Challenge visit <a href='https://forrestbrazeal.com/2020/04/23/the-cloud-resume-challenge/'>this page</a>.
