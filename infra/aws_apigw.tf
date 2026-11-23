@@ -4,7 +4,7 @@ resource "aws_apigatewayv2_api" "api" {
   cors_configuration {
     allow_origins = ["http://localhost:3000", "https://${var.environment}.riki.sh", "https://riki.sh"]
     allow_methods = ["GET", "POST", "OPTIONS"]
-    allow_headers = [ "content-type" ]
+    allow_headers = ["content-type"]
   }
 }
 
