@@ -83,3 +83,71 @@ jobs:
   ############################################
   #     DEPLOY INFRA (managed by HCPTf)      #
   ############################################
+# --- Terraform via HCP Terraform (API-driven workspace) ---
+  #
+  terraform-apply:
+    name: HCP Terraform Plan + Apply
+    needs: [lint-python, lint-terraform, test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      # No need to pass as inputs to each action
+      TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+      TF_WORKSPACE: "crc-backend"
+      TF_DIRECTORY: "./infra"
+    steps:
+      - uses: actions/checkout@v7
+      
+      - uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.3.2
+        id: upload
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          directory: ${{ env.TF_DIRECTORY }}
+
+      - uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
+        id: create-run
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          configuration_version: ${{ steps.upload.outputs.configuration_version_id }}
+
+      - uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
+        # assign id attribute to reference in subsequent steps
+        id: apply
+        with:
+          run: ${{ steps.create-run.outputs.run_id }}
+          comment: "Confirmed from GitHub Actions CI - backend"
+
+      # Read api_url from the workspace's current state via the HCP Terraform API
+      - name: Get API URL from HCP Terraform
+        id: out
+        run: |
+          set -euo pipefail
+          api="https://app.terraform.io/api/v2"
+          auth=(-H "Authorization: Bearer $TF_API_TOKEN" -H "Content-Type: application/vnd.api+json")
+
+          ws_id=$(curl -fsS "${auth[@]}" "$api/organizations/$TF_CLOUD_ORGANIZATION/workspaces/$TF_WORKSPACE" | jq -r '.data.id')
+
+          # Outputs are processed shortly after apply finishes, so retry for a bit
+          for i in {1..10}; do
+            api_url=$(curl -fsS "${auth[@]}" "$api/workspaces/$ws_id/current-state-version-outputs" \
+              | jq -r '.data[] | select(.attributes.name == "api_url") | .attributes.value')
+            [ -n "$api_url" ] && break
+            echo "Output not ready yet, retrying ($i/10)..."
+            sleep 6
+          done
+
+          if [ -z "$api_url" ]; then
+            echo "::error::api_url output not found in workspace $TF_WORKSPACE"
+            exit 1
+          fi
+          echo "api_url=$api_url" >> "$GITHUB_OUTPUT"
+
+      # Smoke test against the live API
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          resp=$(curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "${{ steps.out.outputs.api_url }}")
+          echo "Response: $resp"
+          echo "$resp" | jq -e '.views | type == "number"'
